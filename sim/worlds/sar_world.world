@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <world name="sar_world">
+    <physics type="ode">
+      <ode>
+        <solver><type>quick</type><iters>100</iters><sor>1.0</sor></solver>
+        <constraints><cfm>0.0</cfm><erp>0.9</erp></constraints>
+      </ode>
+      <real_time_update_rate>-1</real_time_update_rate>
+      <max_step_size>0.0025</max_step_size>
+    </physics>
+
+    <!-- inline sun + ground (no model-database fetch: works fully offline) -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.9 0.9 0.85 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>500 500</size></plane></geometry>
+          <surface><friction><ode><mu>100</mu><mu2>50</mu2></ode></friction></surface>
+        </collision>
+        <visual name="visual">
+          <geometry><plane><normal>0 0 1</normal><size>500 500</size></plane></geometry>
+          <material><ambient>0.35 0.4 0.3 1</ambient><diffuse>0.35 0.4 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Primary UAV: iris frame flown by ArduPilot SITL (swap for f550 when tuned) -->
+    <include>
+      <uri>model://iris_sar</uri>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+
+    <!-- Second UAV airframe for multi-UAV scenarios (static visual until 2nd SITL attached) -->
+    <include>
+      <uri>model://iris_with_standoffs</uri>
+      <name>uav2</name>
+      <pose>3 3 0 0 0 0</pose>
+      <static>true</static>
+    </include>
+
+    <!-- Rescue scenario props -->
+    <model name="rubble_1">
+      <static>true</static>
+      <pose>8 4 0.5 0.3 0.2 0.8</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 1.5 1</size></box></geometry></collision>
+        <visual name="v">
+          <geometry><box><size>2 1.5 1</size></box></geometry>
+          <material><ambient>0.4 0.35 0.3 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="survivor_1">
+      <static>true</static>
+      <pose>9 5 0.15 0 1.5707 0</pose>
+      <link name="link">
+        <visual name="v">
+          <geometry><cylinder><radius>0.18</radius><length>1.7</length></cylinder></geometry>
+          <material><ambient>0.8 0.2 0.2 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="survivor_group">
+      <static>true</static>
+      <pose>-12 10 0.15 0 1.5707 0</pose>
+      <link name="link">
+        <visual name="v">
+          <geometry><cylinder><radius>0.18</radius><length>1.7</length></cylinder></geometry>
+          <material><ambient>0.9 0.6 0.1 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <scene>
+      <ambient>0.6 0.6 0.6 1</ambient>
+      <sky><clouds><speed>8</speed></clouds></sky>
+    </scene>
+
+    <spherical_coordinates>
+      <latitude_deg>9.9312</latitude_deg>
+      <longitude_deg>76.2673</longitude_deg>
+      <elevation>7</elevation>
+    </spherical_coordinates>
+  </world>
+</sdf>

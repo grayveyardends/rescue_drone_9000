@@ -1,0 +1,10 @@
+agent_fs/*
+!agent_fs/.gitkeep
+bags/*
+!bags/.gitkeep
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+__pycache__/
+*.pyc
+models/

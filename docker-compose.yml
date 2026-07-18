@@ -1,0 +1,65 @@
+services:
+  # ArduPilot SITL (copter firmware, JSON/Gazebo backend)
+  sitl:
+    image: sar_drone:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    network_mode: host
+    volumes:
+      - ./:/sar
+      - sitl_eeprom:/sitl_home
+    working_dir: /sitl_home
+    command: >
+      sim_vehicle.py -v ArduCopter -f gazebo-iris
+      --no-rebuild
+      -m "--daemon --non-interactive"
+      --add-param-file=/sar/sim/params/sar_sitl.parm
+      --out=udp:127.0.0.1:14550
+      --out=udp:127.0.0.1:14551
+      -l 9.9312,76.2673,7,0
+    restart: unless-stopped
+
+  # Gazebo Classic 11 with the SAR world (GUI via X11)
+  gazebo:
+    image: sar_drone:latest
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+    volumes:
+      - ./:/sar
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    command: gazebo --verbose /sar/sim/worlds/sar_world.world
+    restart: unless-stopped
+
+  # MAVROS + rosbridge + SAR agent nodes
+  ros:
+    image: sar_drone:latest
+    network_mode: host
+    volumes:
+      - ./:/sar
+      - ./agent_fs:/agent_fs
+      - ./bags:/bags
+    environment:
+      - LLM_HOST=http://127.0.0.1:8080
+    command: ros2 launch sar_drone sar_launch.py
+    restart: unless-stopped
+
+  # Mission-control web dashboard  ->  http://localhost:8000
+  dashboard:
+    image: sar_drone:latest
+    network_mode: host
+    volumes:
+      - ./:/sar
+      - ./agent_fs:/agent_fs
+      - ./bags:/bags
+    environment:
+      - LLM_HOST=http://127.0.0.1:8080
+      - MAVLINK_URL=udp:127.0.0.1:14551
+    command: python3 -m uvicorn dashboard.server:app --host 0.0.0.0 --port 8000
+    working_dir: /sar
+    restart: unless-stopped
+
+volumes:
+  sitl_eeprom:

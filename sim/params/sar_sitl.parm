@@ -1,0 +1,4 @@
+# SAR SITL overrides
+# 200 Hz main loop: Gazebo lockstep on modest hardware can't hold 400 Hz,
+# which trips "Main loop slow" / gyro-rate prearm checks.
+SCHED_LOOP_RATE 200

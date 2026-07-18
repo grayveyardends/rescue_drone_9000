@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SAR Drone Mission Control</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="leaflet.css">
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--fg:#c9d1d9;--accent:#58a6ff;
+--ok:#3fb950;--warn:#d29922;--err:#f85149}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--fg);font:13px/1.45 'Segoe UI',system-ui,monospace;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;align-items:center;gap:14px;padding:6px 12px;background:var(--panel);border-bottom:1px solid var(--border)}
+header h1{font-size:15px;color:var(--accent)}
+#telem{display:flex;gap:16px;flex-wrap:wrap;font-family:monospace}
+#telem span b{color:var(--accent)}
+#conn{margin-left:auto;font-size:11px}
+#grid{flex:1;display:grid;gap:6px;padding:6px;overflow:auto;
+grid-template-columns:repeat(4,1fr);grid-auto-rows:minmax(160px,auto)}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:6px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.panel.w2{grid-column:span 2}.panel.h2{grid-row:span 2}
+.panel>.hdr{padding:4px 8px;background:#1c2129;border-bottom:1px solid var(--border);cursor:grab;font-weight:600;color:var(--accent);display:flex;justify-content:space-between;user-select:none}
+.panel>.body{flex:1;overflow:auto;padding:6px;min-height:0}
+.panel.drag-over{outline:2px dashed var(--accent)}
+#map{height:100%;min-height:260px;background:#000}
+pre.log{white-space:pre-wrap;font-family:monospace;font-size:12px}
+.alert{color:var(--err)}
+button{background:#21262d;border:1px solid var(--border);color:var(--fg);border-radius:4px;padding:3px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:#000;font-weight:600}
+input,select,textarea{background:#0d1117;border:1px solid var(--border);color:var(--fg);border-radius:4px;padding:3px 6px}
+.row{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{border-bottom:1px solid var(--border);padding:3px 6px;text-align:left}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border)}
+.tabs button{border:none;border-radius:0;background:none;padding:4px 12px}
+.tabs button.active{color:var(--accent);border-bottom:2px solid var(--accent)}
+.tabpage{display:none;height:calc(100% - 28px);overflow:auto;padding:6px}
+.tabpage.active{display:block}
+.badge{padding:1px 6px;border-radius:8px;font-size:11px}
+.badge.critical{background:var(--err);color:#000}.badge.stable{background:var(--ok);color:#000}
+.badge.unknown{background:var(--warn);color:#000}
+</style>
+</head>
+<body>
+<header>
+  <h1>⬢ SAR MISSION CONTROL</h1>
+  <div id="telem">
+    <span>GPS <b id="t-gps">--</b></span><span>ALT <b id="t-alt">--</b></span>
+    <span>SPD <b id="t-spd">--</b></span><span>HDG <b id="t-hdg">--</b></span>
+    <span>BAT <b id="t-bat">--</b></span><span>MODE <b id="t-mode">--</b></span>
+    <span>ARM <b id="t-arm">--</b></span>
+  </div>
+  <span id="conn">⛔ link down</span>
+</header>
+
+<div id="grid">
+  <div class="panel w2 h2" draggable="true" id="p-map">
+    <div class="hdr">MAP / TRAJECTORY <span>⣿</span></div>
+    <div class="body" style="padding:0"><div id="map"></div></div>
+  </div>
+
+  <div class="panel w2 h2" draggable="true" id="p-model">
+    <div class="hdr">MODEL OUTPUT / PLAN <span>⣿</span></div>
+    <div class="body"><pre class="log" id="model-log"></pre></div>
+  </div>
+
+  <div class="panel w2" draggable="true" id="p-cmd">
+    <div class="hdr">COMMAND CONSOLE <span>⣿</span></div>
+    <div class="body">
+      <div class="row">
+        <button class="primary" onclick="cmd({cmd:'takeoff',alt:+alt.value})">TAKEOFF</button>
+        <input id="alt" type="number" value="15" style="width:60px"> m
+        <button onclick="cmd({cmd:'mode',mode:'GUIDED'})">GUIDED</button>
+        <button onclick="cmd({cmd:'rtl'})">RTL</button>
+        <button onclick="cmd({cmd:'land'})">LAND</button>
+        <button onclick="cmd({cmd:'arm'})">ARM</button>
+        <button onclick="cmd({cmd:'disarm'})">DISARM</button>
+      </div>
+      <div class="row">
+        <input id="raw" placeholder='raw JSON e.g. {"cmd":"goto","lat":9.93,"lon":76.26,"alt":25}' style="flex:1">
+        <button onclick="cmd(JSON.parse(raw.value))">SEND</button>
+      </div>
+      <div class="row" style="color:#8b949e">click map = goto target · shift-click = search pattern</div>
+    </div>
+  </div>
+
+  <div class="panel w2" draggable="true" id="p-upload">
+    <div class="hdr">RESCUE IMAGE → LLM <span>⣿</span></div>
+    <div class="body">
+      <div class="row">
+        <input type="file" id="file" accept="image/*">
+        <input id="ctx" placeholder="context (optional)" style="flex:1">
+        <button class="primary" onclick="upload()">ANALYZE</button>
+      </div>
+      <div class="row"><img id="preview" style="max-height:90px;border-radius:4px"></div>
+    </div>
+  </div>
+
+  <div class="panel w2 h2" draggable="true" id="p-ros">
+    <div class="hdr">ROS <span>⣿</span></div>
+    <div class="body" style="padding:0">
+      <div class="tabs">
+        <button class="active" onclick="tab(this,'tab-log')">Mission Log</button>
+        <button onclick="tab(this,'tab-rosout')">rosout</button>
+        <button onclick="tab(this,'tab-bags')">Bags</button>
+        <button onclick="tab(this,'tab-scripts')">Scripts</button>
+      </div>
+      <div class="tabpage active" id="tab-log"><pre class="log" id="mission-log"></pre></div>
+      <div class="tabpage" id="tab-rosout"><pre class="log" id="rosout-log"></pre></div>
+      <div class="tabpage" id="tab-bags">
+        <div class="row"><button class="primary" onclick="bagStart()">⏺ RECORD</button>
+        <button onclick="loadBags()">refresh</button></div>
+        <div id="bags"></div>
+      </div>
+      <div class="tabpage" id="tab-scripts"><div id="scripts"></div></div>
+    </div>
+  </div>
+
+  <div class="panel w2" draggable="true" id="p-people">
+    <div class="hdr">FOUND PEOPLE <span>⣿</span></div>
+    <div class="body"><table id="people"><thead><tr>
+      <th>ID</th><th>State</th><th>Needs</th><th>GPS</th><th></th></tr></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="panel w2" draggable="true" id="p-alerts">
+    <div class="hdr" style="color:var(--err)">🚨 ALERTS <span>⣿</span></div>
+    <div class="body"><pre class="log alert" id="alert-log"></pre></div>
+  </div>
+</div>
+
+<script src="leaflet.js"></script>
+<script>
+// ---------- map ----------
+const map = L.map('map').setView([9.9312, 76.2673], 17);
+// offline fallback tile: dark grid drawn on a canvas, used when OSM is unreachable
+const c = document.createElement('canvas'); c.width = c.height = 256;
+const g = c.getContext('2d');
+g.fillStyle = '#10151c'; g.fillRect(0, 0, 256, 256);
+g.strokeStyle = '#1f2733'; g.beginPath();
+for (let i = 0; i <= 256; i += 32){ g.moveTo(i,0); g.lineTo(i,256); g.moveTo(0,i); g.lineTo(256,i); }
+g.stroke();
+const gridTile = c.toDataURL();
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {maxZoom: 19, attribution: '© OSM', errorTileUrl: gridTile}).addTo(map);
+const droneIcon = L.divIcon({html:'🛸', className:'', iconSize:[24,24]});
+const droneMk = L.marker([9.9312,76.2673],{icon:droneIcon}).addTo(map);
+const trail = L.polyline([], {color:'#58a6ff',weight:2}).addTo(map);
+const peopleLayer = L.layerGroup().addTo(map);
+map.on('click', e => {
+  const c = e.originalEvent.shiftKey
+    ? {cmd:'search_pattern', lat:e.latlng.lat, lon:e.latlng.lng, radius:40, alt:25}
+    : {cmd:'goto', lat:e.latlng.lat, lon:e.latlng.lng, alt:+document.getElementById('alt').value};
+  cmd(c);
+  L.circleMarker(e.latlng,{radius:5,color:'#d29922'}).addTo(map);
+});
+
+// ---------- websocket ----------
+function log(id, text){
+  const el = document.getElementById(id);
+  el.textContent += text + '\n';
+  el.parentElement.scrollTop = el.parentElement.scrollHeight;
+}
+let ws;
+function connect(){
+  ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onopen = () => conn.textContent = '🟢 link up';
+  ws.onclose = () => { conn.textContent = '⛔ link down'; setTimeout(connect, 2000); };
+  ws.onmessage = ev => {
+    const m = JSON.parse(ev.data);
+    if (m.type === 'telemetry'){
+      document.getElementById('t-gps').textContent = m.lat.toFixed(5)+','+m.lon.toFixed(5);
+      document.getElementById('t-alt').textContent = m.alt.toFixed(1)+'m';
+      document.getElementById('t-spd').textContent = m.groundspeed.toFixed(1)+'m/s';
+      document.getElementById('t-hdg').textContent = Math.round(m.heading)+'°';
+      document.getElementById('t-bat').textContent = m.battery+'%';
+      document.getElementById('t-mode').textContent = m.mode;
+      document.getElementById('t-arm').textContent = m.armed ? 'ARMED' : 'disarmed';
+      if (m.lat){ droneMk.setLatLng([m.lat,m.lon]); trail.addLatLng([m.lat,m.lon]); }
+    }
+    else if (m.type === 'model_output') log('model-log', '─'.repeat(40)+'\n'+m.text);
+    else if (m.type === 'mission_log') log('mission-log', m.text);
+    else if (m.type === 'ros_log') log('rosout-log', typeof m.text==='string'?m.text:JSON.stringify(m.text));
+    else if (m.type === 'alert') log('alert-log', '🚨 '+m.text);
+    else if (m.type === 'people') renderPeople(JSON.parse(m.text));
+  };
+}
+connect();
+
+// ---------- api helpers ----------
+async function cmd(c){
+  log('mission-log', '→ '+JSON.stringify(c));
+  await fetch('/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(c)});
+}
+async function upload(){
+  const f = document.getElementById('file').files[0];
+  if (!f) return alert('choose an image');
+  const fd = new FormData();
+  fd.append('file', f); fd.append('context', document.getElementById('ctx').value);
+  document.getElementById('preview').src = URL.createObjectURL(f);
+  log('model-log', '⏳ analyzing '+f.name+' ...');
+  const r = await (await fetch('/api/upload',{method:'POST',body:fd})).json();
+  if (r.response) log('model-log', r.response);
+  else if (!r.ok) log('alert-log', 'upload failed: '+r.error);
+}
+function tab(btn, id){
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  btn.closest('.panel').querySelectorAll('.tabpage').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id==='tab-bags') loadBags();
+  if (id==='tab-scripts') loadScripts();
+}
+
+// ---------- bags ----------
+async function loadBags(){
+  const d = await (await fetch('/api/bags')).json();
+  document.getElementById('bags').innerHTML =
+    d.recordings.map(r=>`<div class="row">${r.running?'🔴':'⚪'} ${r.id}
+      <small>${r.topics.join(' ')}</small>
+      ${r.running?`<button onclick="bagStop('${r.id}')">STOP</button>`:''}</div>`).join('') +
+    '<hr>' + d.files.map(f=>`<div class="row">💾 ${f.name} <small>${(f.size/1024).toFixed(0)} KB</small></div>`).join('');
+}
+async function bagStart(){ await fetch('/api/bags/start',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); loadBags(); }
+async function bagStop(id){ await fetch(`/api/bags/${id}/stop`,{method:'POST'}); setTimeout(loadBags,500); }
+
+// ---------- scripts ----------
+async function loadScripts(){
+  const d = await (await fetch('/api/scripts')).json();
+  document.getElementById('scripts').innerHTML = d.scripts.map(s=>
+    `<div class="row">📜 ${s} <button onclick="fetch('/api/scripts/${s}/run',{method:'POST'})">RUN</button></div>`).join('') || 'no scripts';
+}
+
+// ---------- people ----------
+function renderPeople(reg){
+  peopleLayer.clearLayers();
+  const tb = document.querySelector('#people tbody');
+  tb.innerHTML = Object.values(reg).map(p=>{
+    if (p.gps) L.marker(p.gps,{icon:L.divIcon({html:'🧍',className:'',iconSize:[20,20]})})
+      .bindTooltip(`${p.id}: ${p.state}`).addTo(peopleLayer);
+    const cls = /crit/i.test(p.state)?'critical':/stable|ok/i.test(p.state)?'stable':'unknown';
+    return `<tr><td>${p.id}</td><td><span class="badge ${cls}">${p.state}</span></td>
+      <td>${p.needs||''}</td><td>${p.gps?p.gps.map(x=>x.toFixed(5)).join(','):'--'}</td>
+      <td><button onclick='editPerson("${p.id}")'>✎</button></td></tr>`;
+  }).join('');
+}
+async function editPerson(id){
+  const state = prompt('state (critical/stable/...)'); if (state===null) return;
+  const needs = prompt('needs (food/water/medical...)') || '';
+  await fetch(`/api/people/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({state, needs})});
+}
+fetch('/api/people').then(r=>r.json()).then(renderPeople);
+setInterval(()=>fetch('/api/people').then(r=>r.json()).then(renderPeople), 10000);
+
+// ---------- draggable / rearrangeable panels ----------
+let dragged = null;
+document.querySelectorAll('.panel').forEach(p=>{
+  p.addEventListener('dragstart', ()=>dragged=p);
+  p.addEventListener('dragover', e=>{e.preventDefault(); p.classList.add('drag-over');});
+  p.addEventListener('dragleave', ()=>p.classList.remove('drag-over'));
+  p.addEventListener('drop', e=>{
+    e.preventDefault(); p.classList.remove('drag-over');
+    if (dragged && dragged!==p){
+      const grid = p.parentElement, a = [...grid.children];
+      grid.insertBefore(dragged, a.indexOf(dragged) < a.indexOf(p) ? p.nextSibling : p);
+      setTimeout(()=>map.invalidateSize(), 100);
+    }
+  });
+});
+</script>
+</body>
+</html>
