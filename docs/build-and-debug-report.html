@@ -1,0 +1,297 @@
+<!doctype html>
+<title>SAR Drone Stack — Build & Debug Report</title>
+<style>
+:root{
+  --paper:#f4f6f5; --ink:#1c2422; --muted:#5b6763; --line:#d8ded9;
+  --card:#ffffff; --code-bg:#eef1ee; --accent:#1f7a68; --accent-ink:#ffffff;
+  --warn:#a06a12; --err:#b0433a; --ok:#2c7a4b;
+}
+@media (prefers-color-scheme: dark){:root{
+  --paper:#131917; --ink:#dde5e1; --muted:#8fa09a; --line:#2a332f;
+  --card:#1a211e; --code-bg:#10312b22; --accent:#4fd1b5; --accent-ink:#0c211c;
+  --warn:#d9a441; --err:#e0736a; --ok:#5cb87f;
+}}
+:root[data-theme="dark"]{
+  --paper:#131917; --ink:#dde5e1; --muted:#8fa09a; --line:#2a332f;
+  --card:#1a211e; --code-bg:#10312b22; --accent:#4fd1b5; --accent-ink:#0c211c;
+  --warn:#d9a441; --err:#e0736a; --ok:#5cb87f;
+}
+:root[data-theme="light"]{
+  --paper:#f4f6f5; --ink:#1c2422; --muted:#5b6763; --line:#d8ded9;
+  --card:#ffffff; --code-bg:#eef1ee; --accent:#1f7a68; --accent-ink:#ffffff;
+  --warn:#a06a12; --err:#b0433a; --ok:#2c7a4b;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);margin:0;
+  font:16px/1.65 "Charter","Iowan Old Style",Georgia,serif;}
+main{max-width:76ch;margin:0 auto;padding:2.5rem 1.25rem 6rem}
+h1,h2,h3{font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;line-height:1.2;text-wrap:balance}
+h1{font-size:2rem;margin:.2rem 0 .4rem}
+h2{font-size:1.4rem;margin:3rem 0 .8rem;padding-top:1.2rem;border-top:1px solid var(--line)}
+h3{font-size:1.05rem;margin:1.6rem 0 .5rem}
+p{margin:.7rem 0}
+.eyebrow{font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;font-size:.72rem;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.sub{color:var(--muted);font-size:1.02rem;margin-top:0}
+code,pre{font-family:"JetBrains Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.83rem}
+code{background:var(--code-bg);padding:.1em .35em;border-radius:3px}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:6px;
+  padding:.9rem 1rem;overflow-x:auto;line-height:1.55}
+pre code{background:none;padding:0}
+a{color:var(--accent)}
+ul,ol{padding-left:1.4rem}
+li{margin:.3rem 0}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:.45rem .6rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;font-size:.78rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+.bug{background:var(--card);border:1px solid var(--line);border-radius:8px;
+  padding:1.1rem 1.3rem;margin:1.3rem 0}
+.bug h3{margin-top:0}
+.bug .tag{display:inline-block;font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;
+  font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:.15em .6em;border-radius:99px;margin-right:.4rem}
+.tag.sym{background:color-mix(in srgb,var(--err) 15%,transparent);color:var(--err)}
+.tag.dbg{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.tag.fix{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.tag.les{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}
+.bug dl{margin:.6rem 0 0}
+.bug dt{margin-top:.7rem}
+.bug dd{margin:.25rem 0 0 0}
+.lesson{border-left:3px solid var(--accent);padding:.2rem 0 .2rem 1rem;
+  margin:1rem 0;color:var(--ink);font-style:italic}
+.annot{display:grid;grid-template-columns:minmax(280px,1.1fr) 1fr;gap:0;
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:1rem 0;font-size:.85rem}
+.annot>div{padding:.7rem .9rem;border-bottom:1px solid var(--line)}
+.annot>div:nth-child(odd){background:var(--code-bg);
+  font-family:"JetBrains Mono","SF Mono",ui-monospace,Menlo,monospace;font-size:.78rem;
+  white-space:pre-wrap;word-break:break-word}
+.annot>div:nth-last-child(-n+2){border-bottom:none}
+@media (max-width:640px){.annot{grid-template-columns:1fr}
+  .annot>div:nth-child(odd){border-bottom:none}}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:8px;
+  padding:1rem 1.3rem;font-family:"Avenir Next","Segoe UI",system-ui,sans-serif;font-size:.92rem}
+.toc ol{margin:.4rem 0 0;padding-left:1.2rem}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;
+  padding:0 .35em;font-size:.8em;font-family:inherit}
+.pill{font-family:"Avenir Next",system-ui,sans-serif;font-size:.72rem;font-weight:600;
+  color:var(--muted);letter-spacing:.05em}
+</style>
+
+<main>
+<p class="eyebrow">Engineering debrief · 2026-07-18</p>
+<h1>How your SAR drone stack got built — and everything that broke on the way</h1>
+<p class="sub">A learning report: the architecture, every file explained, all nine failures with how each one was diagnosed, and exercises so you can own every layer yourself.</p>
+
+<div class="toc">
+<strong>Contents</strong>
+<ol>
+  <li><a href="#arch">The architecture in one picture</a></li>
+  <li><a href="#files">What each file does</a></li>
+  <li><a href="#docker">The Dockerfile, line by line</a></li>
+  <li><a href="#bugs">The debugging log — 9 failures</a></li>
+  <li><a href="#flow">How a click becomes a flying drone</a></li>
+  <li><a href="#mavlink">ROS vs MAVLink, finally clear</a></li>
+  <li><a href="#learn">Exercises: make it yours</a></li>
+</ol>
+</div>
+
+<h2 id="arch">1 · The architecture in one picture</h2>
+<pre class="mermaid">
+flowchart LR
+  B[Browser<br/>localhost:8000] -->|HTTP + WebSocket| D[dashboard<br/>FastAPI]
+  D -->|roslibpy| RB[rosbridge :9090]
+  D -->|pymavlink<br/>udp 14551| MP[MAVProxy]
+  RB --> R[ROS 2 graph]
+  R --- MB[mission_bridge]
+  R --- LA[llm_agent]
+  R --- MV[mavros]
+  MV -->|udp 14550| MP
+  LA -->|HTTP| LLM[llama-server :8080<br/>on host GPU]
+  MP -->|tcp 5760| SITL[ArduPilot SITL<br/>arducopter]
+  SITL <-->|udp 9002/9003<br/>lockstep FDM| GZ[Gazebo 11<br/>sar_world]
+</pre>
+<p>Five processes, three protocols. The key idea: <strong>ArduPilot doesn't know it's in a simulator.</strong> The same firmware that runs on your Pixhawk runs here as a Linux binary (<code>arducopter</code>), and Gazebo plays the role of the physical world — it computes physics and feeds fake sensor data back. Everything above SITL (MAVProxy, mavros, the dashboard) works identically against your real drone; you just change one URL.</p>
+
+<h2 id="files">2 · What each file does</h2>
+<div class="tablewrap"><table>
+<tr><th>File</th><th>Role</th><th>Worth studying for</th></tr>
+<tr><td><code>docker/Dockerfile</code></td><td>Builds one image containing ROS 2 + Gazebo + ArduPilot + all deps</td><td>Layer caching, building C++ projects from source</td></tr>
+<tr><td><code>docker/entrypoint.sh</code></td><td>Environment setup that must happen at <em>run</em> time, not build time</td><td>Why bind mounts shadow image contents (bug #3)</td></tr>
+<tr><td><code>docker-compose.yml</code></td><td>Runs 4 services from that one image with different commands</td><td>One-image-many-services pattern, <code>network_mode: host</code></td></tr>
+<tr><td><code>sim/worlds/sar_world.world</code></td><td>The Gazebo scene: ground, drone, rubble, survivors</td><td>SDF format, physics step size, spherical coordinates → GPS</td></tr>
+<tr><td><code>sim/models/iris_sar/</code></td><td>The flyable quad: lift-drag physics + ArduPilot plugin</td><td>How thrust is simulated per-rotor (bug #7)</td></tr>
+<tr><td><code>sim/models/f550/</code></td><td>Your hexacopter, 6 rotors wired to ArduPilot channels 0–5</td><td>Motor ordering, spin directions, hexa-X layout</td></tr>
+<tr><td><code>sim/params/sar_sitl.parm</code></td><td>One parameter: <code>SCHED_LOOP_RATE 200</code></td><td>Bug #9 — the most physical bug of the lot</td></tr>
+<tr><td><code>ros2_ws/src/sar_drone/</code></td><td>Your ROS 2 Python package: <code>mission_bridge</code> + <code>llm_agent</code> nodes</td><td>Nodes, topics, QoS, launch files, <code>colcon</code></td></tr>
+<tr><td><code>dashboard/server.py</code></td><td>FastAPI backend: telemetry, commands, uploads, rosbags, people registry</td><td>Threading + asyncio bridge, pymavlink (bug #8)</td></tr>
+<tr><td><code>dashboard/static/index.html</code></td><td>The whole mission-control UI in one file</td><td>WebSockets, Leaflet, drag-and-drop panels, zero frameworks</td></tr>
+<tr><td><code>scripts/survey_grid.py</code></td><td>A canned mission the LLM can trigger by name</td><td>The <code>run_script</code> allowlist pattern</td></tr>
+<tr><td><code>agent_fs/</code></td><td>The LLM's private filesystem: actions, plans, people, logs</td><td>How agent output becomes auditable state</td></tr>
+</table></div>
+
+<h2 id="docker">3 · The Dockerfile, line by line</h2>
+<p>Read this with the file open. Order matters enormously: Docker caches each step, and a step only re-runs if it or anything above it changed. That caching is what saved us — the build failed twice on network errors, and each retry resumed instead of restarting.</p>
+
+<div class="annot">
+<div>FROM ros:humble-ros-base-jammy</div>
+<div>Start from the official ROS 2 Humble image on Ubuntu 22.04 ("jammy"). <code>ros-base</code> = ROS without GUI tools, ~1&nbsp;GB smaller than <code>desktop</code>. This one decision fixes the Ubuntu version, Python version (3.10), and Gazebo version (11) for everything below.</div>
+<div>SHELL ["/bin/bash", "-c"]</div>
+<div>Default shell is <code>sh</code>, but ROS's <code>setup.bash</code> needs bash. Every later <code>RUN</code> uses bash because of this.</div>
+<div>RUN apt-get update &amp;&amp; apt-get install -y \
+  gazebo libgazebo-dev \
+  ros-humble-gazebo-ros-pkgs \
+  ros-humble-mavros ... \
+  &amp;&amp; rm -rf /var/lib/apt/lists/*</div>
+<div>One big apt layer. <code>update</code> and <code>install</code> must share a layer or you get stale-index bugs. The <code>rm</code> at the end deletes the package index (~50&nbsp;MB) from the layer — a classic image-size habit. <code>mavros</code> is the ROS↔MAVLink translator; <code>rosbridge-server</code> exposes ROS over WebSocket for the dashboard; <code>rmw-cyclonedds-cpp</code> is the DDS middleware we pin later.</div>
+<div>RUN /opt/ros/humble/lib/mavros/install_geographiclib_datasets.sh</div>
+<div>mavros converts between GPS ellipsoid heights and mean-sea-level; it hard-crashes at startup without these geoid datasets. Everyone forgets this line once.</div>
+<div>RUN git clone --depth 1 --recurse-submodules \
+  --shallow-submodules \
+  https://github.com/ArduPilot/ardupilot.git</div>
+<div><code>--depth 1</code> = only the latest commit, not 15 years of history (saves ~2&nbsp;GB). ArduPilot vendors dozens of libraries as git submodules; the build fails cryptically if you forget <code>--recurse-submodules</code>.</div>
+<div>RUN pip3 install --no-cache-dir --retries 15 \
+  --timeout 120 pymavlink MAVProxy \
+  empy==3.3.4 ...</div>
+<div>The <code>--retries/--timeout</code> flags were added after bug&nbsp;#1. <code>empy==3.3.4</code> is pinned because ArduPilot's code generator breaks on empy 4.x — a famous ecosystem landmine. <code>MAVProxy</code> becomes our MAVLink router at runtime.</div>
+<div>RUN cd /ardupilot &amp;&amp; \
+  ./waf configure --board sitl &amp;&amp; ./waf copter</div>
+<div>ArduPilot uses <code>waf</code>, not make/cmake. <code>--board sitl</code> compiles the flight firmware as a normal x86 Linux program instead of ARM microcontroller code. This is the slowest step (~20&nbsp;min) — deliberately placed after the rarely-changing layers, before the frequently-changing ones.</div>
+<div>ENV PATH=$PATH:/ardupilot/Tools/autotest:...</div>
+<div>Puts <code>sim_vehicle.py</code> (ArduPilot's SITL launcher) on the PATH so compose can just say <code>sim_vehicle.py</code>.</div>
+<div>RUN for i in 1 2 3 4 5 6; do git clone ... \
+  ardupilot_gazebo &amp;&amp; break; ...; done \
+  &amp;&amp; cmake .. &amp;&amp; make &amp;&amp; make install</div>
+<div>The C++ Gazebo plugin (<code>libArduPilotPlugin.so</code>) that shuttles motor commands and sensor data between Gazebo and SITL over UDP 9002/9003. The ugly retry loop is bug&nbsp;#2's fix — your network dropped mid-clone.</div>
+<div>ENV GAZEBO_MODEL_PATH=... GAZEBO_RESOURCE_PATH=...</div>
+<div>Where Gazebo searches for <code>model://iris_sar</code> style URIs — the plugin's models plus your <code>sim/models</code>.</div>
+<div>COPY ros2_ws /sar/ros2_ws
+RUN ... colcon build</div>
+<div><code>colcon</code> is ROS 2's build tool; it generates the <code>install/setup.bash</code> you source to make <code>ros2 launch sar_drone ...</code> resolvable. This build gets shadowed at runtime — see bug&nbsp;#3.</div>
+<div>ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENTRYPOINT ["/entrypoint.sh"]</div>
+<div>Pins the DDS vendor (ROS 2's pluggable network layer) so every container behaves identically, and routes all startup through the entrypoint script, which sources ROS, rebuilds the workspace if needed, kills the dead model database (bug&nbsp;#6), and sets <code>ROS_LOCALHOST_ONLY=1</code> (bug&nbsp;#5).</div>
+</div>
+
+<p>And the compose file's one big idea: <strong>one image, four services.</strong> <code>sitl</code>, <code>gazebo</code>, <code>ros</code>, and <code>dashboard</code> all run <code>sar_drone:latest</code> with different <code>command:</code> lines, all with <code>network_mode: host</code> so that "connect to 127.0.0.1:14550" works between them without any port-mapping ceremony.</p>
+
+<h2 id="bugs">4 · The debugging log — nine failures, in order</h2>
+<p>This is the part you actually missed, and honestly the most valuable. Notice the pattern in every entry: <em>observe the real symptom → find the first point in the chain where reality diverges from expectation → fix that, not the symptom.</em></p>
+
+<div class="bug"><h3>#1 — The build that "succeeded" but didn't</h3>
+<dl>
+<dt><span class="tag sym">Symptom</span></dt><dd>Background build exits with code 0, but <code>docker images</code> shows no image, and <code>docker run</code> says the image doesn't exist.</dd>
+<dt><span class="tag dbg">Debugging</span></dt><dd>Trusting the exit code was the mistake. Reading the actual log tail showed a pip stack trace ending in <code>ReadTimeoutError: files.pythonhosted.org — Read timed out</code>. The build had died at the pip step. So why exit 0? The command was <code>docker build ... | tail -40</code> — in a pipeline, the shell reports the exit code of the <em>last</em> command. <code>tail</code> succeeded, so the pipeline "succeeded."</dd>
+<dt><span class="tag fix">Fix</span></dt><dd>Added <code>--retries 15 --timeout 120</code> to pip, and stopped piping build output (write to a log file instead, so the exit code is docker's own).</dd>
+</dl>
+<p class="lesson">A pipeline's exit code is the last command's, not the interesting one's. In bash use <code>${PIPESTATUS[0]}</code>, in zsh <code>${pipestatus[1]}</code> — or don't pipe commands whose exit code you care about. And never claim success you haven't verified with your own eyes.</p></div>
+
+<div class="bug"><h3>#2 — Same story, different downloader</h3>
+<dl>
+<dt><span class="tag sym">Symptom</span></dt><dd>Second build attempt: <code>fatal: unable to access 'github.com/.../ardupilot_gazebo': SSL connection timeout</code>.</dd>
+<dt><span class="tag dbg">Debugging</span></dt><dd>Nothing to diagnose — but worth noticing that ArduCopter had already compiled successfully in a <em>cached layer</em>, so the retry resumed 20 minutes into the build, not from zero. This is why Dockerfile step ordering matters.</dd>
+<dt><span class="tag fix">Fix</span></dt><dd>Wrapped the clone in a 6-attempt retry loop with sleeps. Networks flake; scripts that touch the network should assume it.</dd>
+</dl>
+<p class="lesson">Design builds so that expensive steps cache and flaky steps retry. Your internet connection is part of your build system whether you like it or not.</p></div>
+
+<div class="bug"><h3>#3 — The container that forgot its own package</h3>
+<dl>
+<dt><span class="tag sym">Symptom</span></dt><dd>The <code>ros</code> container restart-loops with <code>Package 'sar_drone' not found</code> — even though the Dockerfile built it and the smoke test inside the raw image found it fine.</dd>
+<dt><span class="tag dbg">Debugging</span></dt><dd>The contradiction is the clue: the image has it, the running container doesn't. What differs between them? The compose file adds <code>volumes: ./:/sar</code>. That bind mount lays your host repo <em>over</em> <code>/sar</code>, hiding the <code>ros2_ws/install/</code> directory that colcon created inside the image — your host copy had never been built.</dd>
+<dt><span class="tag fix">Fix</span></dt><dd>The entrypoint now checks for <code>install/setup.bash</code> and runs <code>colcon build --symlink-install</code> on first start. Bonus: <code>--symlink-install</code> means Python edits on your host take effect on node restart, no rebuild.</dd>
+</dl>
+<p class="lesson">A bind mount always wins over image content at that path. "Works in the image, breaks in compose" almost always means a mount is shadowing something.</p></div>
+
+<div class="bug"><h3>#4 — MAVROS shouting into the void</h3>
+<dl>
+<dt><span class="tag sym">Symptom</span></dt><dd>mavros logs endless <code>VER: autopilot version service timeout</code>; no heartbeat; dashboard shows link down.</dd>
+<dt><span class="tag dbg">Debugging</span></dt><dd>mavros listens on udp 14550. Who is supposed to send there? The <code>sim_vehicle.py</code> flags said <code>--out=udp:...:14550 --no-mavproxy</code>. Reading what those flags actually do revealed the contradiction: <code>--out</code> options are instructions <em>for MAVProxy</em> — and <code>--no-mavproxy</code> had disabled it. Nobody was forwarding anything. SITL itself only offers a TCP server on port 5760, single-client.</dd>
+<dt><span class="tag fix">Fix</span></dt><dd>Run MAVProxy headless: <code>-m "--daemon --non-interactive"</code>. It connects to SITL's tcp 5760 and fans out to udp 14550 (mavros) and 14551 (dashboard) — one flight controller, many listeners.</dd>
+</dl>
+<p class="lesson">When A can't hear B, don't debug A — trace the whole route and find the hop that doesn't exist. Also: MAVProxy isn't optional decoration, it's the router.</p></div>
+
+<div class="bug"><h3>#5 — ROS breaks when the wifi blinks</h3>
+<dl>
+<dt><span class="tag sym">Symptom</span></dt><dd>Node logs full of <code>ddsi_udp_conn_write to udp/10.73.x.x failed</code>; topics and services flicker in and out.</dd>
+<dt><span class="tag dbg">Debugging</span></dt><dd>Those 10.x addresses are your wifi/VPN interfaces. ROS 2's transport, DDS, auto-discovers peers by multicasting on <em>every</em> network interface — and with <code>network_mode: host</code>, the containers see them all. When an interface flapped (your network was dropping all evening — same root cause as bugs #1 and #2), DDS kept trying to use its corpse.</dd>
+<dt><span class="tag fix">Fix</span></dt><dd>First tried a hand-written CycloneDDS XML config pinning the loopback interface — it half-worked (topics yes, some services no). Replaced it with the built-in, battle-tested switch: <code>ROS_LOCALHOST_ONLY=1</code>. Everything runs on one machine, so DDS never needs to leave loopback.</dd>
+</dl>
+<p class="lesson">Prefer a platform's built-in switch over your own clever config for the same goal. And know your transport: "ROS is magic pub/sub" ends the day discovery breaks.</p></div>
+
+<div class="bug"><h3>#6 — Gazebo hangs calling a server that died years ago</h3>
+<dl>
+<dt><span class="tag sym">Symptom</span></dt><dd>gzserver loads the world, prints <code>Getting models from http://models.gazebosim.org/</code> … and hangs forever. No error, no world.</dd>
+<dt><span class="tag dbg">Debugging</span></dt><dd>The world file said <code>&lt;include&gt;&lt;uri&gt;model://sun&lt;/uri&gt;</code>. Any model not found locally makes Gazebo Classic query its online database — which was shut down years ago; the domain just blackholes. Then a second layer: after fixing sun/ground, the iris model <em>itself</em> failed with <code>Couldn't Find Child Link [gimbal_small_2d::base_link]</code> — the stock <code>iris_with_ardupilot</code> includes a camera gimbal that also only exists in the dead database.</dd>
+<dt><span class="tag fix">Fix</span></dt><dd>Inlined the sun (a <code>&lt;light&gt;</code>) and ground plane directly in the world file; created <code>sim/models/iris_sar</code> — the iris minus the gimbal include; set <code>GAZEBO_MODEL_DATABASE_URI=""</code> so nothing can ever try the network again. Side benefit: the sim is now fully offline-capable, which you wanted anyway.</dd>
+</dl>
+<p class="lesson">A hang is a timeout you haven't waited out yet — go find the network call. Old ecosystems accumulate dead infrastructure; vendoring your dependencies is self-defense.</p></div>
+
+<div class="bug"><h3>#7 — Wrong message type on /rosout</h3>
+<dl>
+<dt><span class="tag sym">Symptom</span></dt><dd>rosbridge error: <code>Tried to register topic /rosout with type std_msgs/String but it is already established with type rcl_interfaces/msg/Log</code>.</dd>
+<dt><span class="tag dbg">Debugging</span></dt><dd>Self-inflicted and honest: the dashboard relay subscribed to every topic as <code>std_msgs/String</code> for convenience. <code>/rosout</code> (ROS's logging firehose) is a structured <code>Log</code> message. ROS topics are strongly typed; you can't just declare a type and hope.</dd>
+<dt><span class="tag fix">Fix</span></dt><dd>Subscribe with the correct type and format <code>[node] message</code> from its fields.</dd>
+</dl>
+<p class="lesson">Check a topic's real type with <code>ros2 topic info /rosout</code> before subscribing. Typed interfaces fail loudly at the boundary — that's a feature.</p></div>
+
+<div class="bug"><h3>#8 — The service that exists but can't be found</h3>
+<dl>
+<dt><span class="tag sym">Symptom</span></dt><dd>Takeoff does nothing. <code>mission_bridge</code> logs <code>service /mavros/cmd/arming unavailable</code> — yet <code>ros2 service list</code> plainly shows the service, and its neighbor <code>/mavros/set_mode</code> works.</dd>
+<dt><span class="tag dbg">Debugging</span></dt><dd>Narrowed it with a manual <code>ros2 service call</code> — same result: hangs on "waiting for service." So it's not our node's fault; the mavros <em>command plugin's</em> services are advertised in the graph but never become callable — a known rough edge of mavros2 service discovery (mavros even fails to call its own command plugin at startup: that early <code>VER: command plugin service call failed</code> message was a clue hiding in plain sight). Rather than fight an upstream bug, ask: who else can arm a drone? Any ground station — by sending a plain MAVLink <code>COMMAND_LONG</code>. And the dashboard already holds a direct MAVLink connection for telemetry.</dd>
+<dt><span class="tag fix">Fix</span></dt><dd>Split responsibilities: arm/disarm/mode/takeoff/land/RTL go out the dashboard's pymavlink link (the exact bytes Mission Planner would send); <code>mission_bridge</code> keeps goto/search patterns via topic-published setpoints, which work perfectly. Bonus resilience: basic flight control now survives the entire ROS stack dying.</dd>
+</dl>
+<p class="lesson">When one layer is unreliable, ask what the layer <em>below</em> it speaks — mavros services are just a wrapper around MAVLink commands you can send yourself. Re-reading early "harmless" log errors often pays off later.</p></div>
+
+<div class="bug"><h3>#9 — PreArm: Main loop slow</h3>
+<dl>
+<dt><span class="tag sym">Symptom</span></dt><dd>Everything connected, yet arming always refused: <code>PreArm: Main loop slow (272Hz &lt; 400Hz)</code> and a gyro-rate complaint.</dd>
+<dt><span class="tag dbg">Debugging</span></dt><dd>This one is physics, not plumbing. Gazebo and SITL run in <em>lockstep</em>: each 2.5&nbsp;ms physics step feeds one sensor sample to ArduPilot, whose control loop expects 400 steps per real second. Your machine sustains ~272 physics steps/sec, so the firmware's scheduler measures itself running slow — and on a real drone a slow control loop crashes aircraft, so PreArm refuses. It's a safety check doing its job against a simulator that can't keep up.</dd>
+<dt><span class="tag fix">Fix</span></dt><dd><code>SCHED_LOOP_RATE 200</code> in <code>sim/params/sar_sitl.parm</code>, loaded via <code>--add-param-file</code>. At 200&nbsp;Hz the machine has headroom, checks pass, and the copter flies fine. (Alternative rejected: disabling arming checks entirely — never train yourself to bypass safety systems.)</dd>
+</dl>
+<p class="lesson">Simulators borrow your CPU as their physics engine; "the drone won't arm" can literally mean "your laptop is too slow." Fix the parameter that encodes the assumption, don't disable the check that caught it.</p></div>
+
+<p>After #9: takeoff commanded through the dashboard API → <code>alt = 10.0 m, GUIDED, armed</code> confirmed over the telemetry WebSocket, then LAND → <code>DISARMED</code>. That closing loop — <em>verify through the same interface the user will use</em> — is the habit worth stealing.</p>
+
+<h2 id="flow">5 · How a click becomes a flying drone</h2>
+<p>Trace one command end-to-end; if you can narrate this chain from memory, you understand the system.</p>
+<ol>
+<li><strong>You click the map.</strong> The browser JS builds <code>{"cmd":"goto","lat":9.93,"lon":76.26,"alt":25}</code> and POSTs it to <code>/api/command</code>.</li>
+<li><strong>FastAPI publishes it</strong> as a JSON string on the ROS topic <code>/sar/command</code>, via its roslibpy connection to rosbridge (WebSocket, port 9090).</li>
+<li><strong>Two subscribers hear it.</strong> <code>mission_bridge</code> handles goto: it publishes a <code>GeoPoseStamped</code> to <code>/mavros/setpoint_position/global</code>. (Had it been <code>takeoff</code>, the dashboard's own MAVLink executor would have taken it instead — bug #8's split.)</li>
+<li><strong>mavros translates</strong> that ROS message into a MAVLink <code>SET_POSITION_TARGET_GLOBAL_INT</code> packet and sends it to udp 14550.</li>
+<li><strong>MAVProxy routes</strong> it to SITL's TCP serial port — exactly as a telemetry radio would deliver it to your Pixhawk.</li>
+<li><strong>ArduPilot's guidance logic</strong> accepts the target (GUIDED mode), runs its position → velocity → attitude → motor cascade, and outputs four PWM values.</li>
+<li><strong>The Gazebo plugin</strong> receives those PWM values over udp 9002, spins the rotor joints, the LiftDrag plugin turns rotation into thrust, physics integrates, and the pose + IMU + GPS go back over 9003.</li>
+<li><strong>Telemetry returns</strong> up the same chain; the dashboard's pymavlink thread parses <code>GLOBAL_POSITION_INT</code> and pushes JSON over the WebSocket; the marker on your map moves.</li>
+</ol>
+<p>The LLM path is the same chain with a different head: image → <code>/sar/analyze_b64</code> → <code>llm_agent</code> → llama-server → structured <code>&lt;&lt;action_start&gt;&gt;</code> text → regex parse → the same <code>/sar/command</code> topic your buttons use. The model is just another operator at the same console — which is also the safety argument: everything it can do, you can see and veto.</p>
+
+<h2 id="mavlink">6 · ROS vs MAVLink, finally clear</h2>
+<div class="tablewrap"><table>
+<tr><th></th><th>MAVLink</th><th>ROS 2</th></tr>
+<tr><td>What it is</td><td>A compact binary <em>wire protocol</em> for talking to a flight controller</td><td>A <em>middleware</em> for composing robot software from many programs</td></tr>
+<tr><td>Vocabulary</td><td>~300 fixed message types (HEARTBEAT, COMMAND_LONG, GLOBAL_POSITION_INT…)</td><td>Unlimited user-defined typed topics/services/actions</td></tr>
+<tr><td>Transport</td><td>Any byte pipe: serial radio, UDP, TCP</td><td>DDS over UDP with automatic peer discovery</td></tr>
+<tr><td>Speaks it</td><td>Pixhawk, ArduPilot, Mission Planner, QGroundControl, your dashboard's pymavlink</td><td>mavros, rosbridge, your two nodes, rviz, rosbag</td></tr>
+<tr><td>In this project</td><td>Everything touching the autopilot</td><td>Everything touching your application logic</td></tr>
+</table></div>
+<p><strong>mavros is the adapter between the two worlds</strong> — and bug #8 taught the real lesson: adapters leak. Knowing the layer beneath your abstraction (being able to send raw <code>COMMAND_LONG</code> yourself) is what turned an upstream bug from a wall into a detour.</p>
+
+<h2 id="learn">7 · Exercises: make it yours</h2>
+<p>Ordered easy → hard. Each touches a layer you watched get built; break things freely — <code>git checkout</code> and <code>docker compose down</code> undo everything.</p>
+<ol>
+<li><strong>Watch the nervous system.</strong> <code>docker exec -it drone_rescue-ros-1 bash</code>, source ROS, then <code>ros2 topic list</code>, <code>ros2 topic echo /mavros/state</code>, <code>ros2 topic hz /mavros/global_position/global</code>. Publish a command by hand with <code>ros2 topic pub</code> and watch the drone obey.</li>
+<li><strong>Speak raw MAVLink.</strong> Ten-line Python: <code>mavutil.mavlink_connection('udp:127.0.0.1:14551')</code>, wait for heartbeat, print message types as they arrive. You'll never see the telemetry panel as magic again.</li>
+<li><strong>Move the survivors.</strong> Edit <code>sar_world.world</code> — reposition the rubble, add a third survivor, change the sun angle. Restart only the gazebo service.</li>
+<li><strong>Add a dashboard panel.</strong> A "flight timer" or message-rate counter: one <code>div</code> in index.html, a few lines in the WebSocket handler. The panel drag system will pick it up automatically.</li>
+<li><strong>Add a command.</strong> Implement <code>{"cmd":"orbit", ...}</code> end-to-end: a button in the UI, a <code>cmd_orbit</code> method in mission_bridge publishing a circle of setpoints. This walks you through the whole chain in section 5.</li>
+<li><strong>Write your own script</strong> in <code>scripts/</code> and make the LLM call it by adding it to the system prompt's action list.</li>
+<li><strong>Fly the F550.</strong> Swap <code>model://iris_sar</code> for <code>model://f550</code> in the world, set <code>FRAME_CLASS 2</code> in the param file, and tune until it hovers. This is real integration work — expect it to fight back like bugs #6–#9 did.</li>
+<li><strong>Break it on purpose.</strong> Re-add <code>--no-mavproxy</code> and watch bug #4 happen to you; set <code>SCHED_LOOP_RATE</code> back to 400 and meet bug #9. Reproducing a bug you've read about is how the diagnosis becomes yours.</li>
+<li><strong>Record and replay.</strong> Record a flight with the Bags tab, then <code>ros2 bag play</code> it back and watch the dashboard replay history — understand why bags are the black box recorder of robotics.</li>
+<li><strong>Point it at the real drone.</strong> When ready: <code>FCU_URL=serial:///dev/ttyACM0:57600</code>, props off, on a bench. Everything you've learned transfers unchanged — that was the whole point of the architecture.</li>
+</ol>
+
+<p class="pill">Generated from the actual build session · every error message quoted verbatim from the logs</p>
+</main>
