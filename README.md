@@ -1,6 +1,6 @@
 # Drone rescue 
 
-runs a reasoning model to detect and report actual data and victims.
+Runs a reasoning model to detect and report actual data and victims.
 
 gives MAVROS command for the gazebo drone to execute and act on.
 
